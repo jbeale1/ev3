@@ -72,7 +72,7 @@ tPrevious = 0         # elapsed time last cycle
 odAvgLast = 0         # average odometer last cycle
 vScaleFac = 0.1       # fudge factor for "actual" motor speed
 
-print("Time, Cyc, deg, deg/s, reqSpeed, realSpeed, dist") # column headings
+print("Time, dT, Cyc, deg, deg/s, reqSpeed, realSpeed, dist") # column headings
 
 while (odAvg < 2900): # stop after a certain distance
   tElapsed = time.time() - tStart  # duration in seconds
@@ -81,7 +81,7 @@ while (odAvg < 2900): # stop after a certain distance
   angle,rate = gyro.angle_and_rate
   odB = mB.position # cumulative angle on B motor
   odC = mC.position # cumulative angle on C motor
-  odAvg = int((odB + odC) / 2)
+  odAvg = ((odB + odC) / 2)
   dX = odAvg - odAvgLast  # change in odometer from last cycle
   vel = dX/dT * vScaleFac # apparent actual motor speed in simulation
   error = colorLeft.reflected_light_intensity - colorRight.reflected_light_intensity
@@ -96,8 +96,8 @@ while (odAvg < 2900): # stop after a certain distance
     speed = smin + smax*(100-(abs(correction/2) + abs(angle*2)))/100
     if (speed < smin):  # but always go at least this fast
       speed = smin
-  print("%05.2f, %03d, %03d, %03d, %4.1f, %4.1f, %04d" %
-        (tElapsed, cycles, angle, rate, speed, vel, odAvg))
+  print("%05.3f, %5.4f, %03d, %03d, %03d, %4.1f, %4.1f, %5.1f" %
+        (tElapsed, dT, cycles, angle, rate, speed, vel, odAvg))
   steering_drive.on(correction, speed) # drive with this angle and speed
   tPrevious = tElapsed
   odAvgLast = odAvg
