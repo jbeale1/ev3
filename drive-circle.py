@@ -25,16 +25,16 @@ def waitBC():
     aC2 = mC.angle()
     runB = not(aB1 == aB2)
     runC = not(aC1 == aC2)
-    print("MotorB: %d,%d  MotorC: %d,%d" %(aB1,aB2,aC1,aC2))
+    # print("MotorB: %d,%d  MotorC: %d,%d" %(aB1,aB2,aC1,aC2))
 
 def printAngle():
   global angle   # update current heading angle
-
+  global DTFlag  # signal to write motor drive time in log
   i=0
   told = watch.time()/1000 # units of seconds
   vbat = brick.battery.voltage()/1000.0 # convert millivolts to V
   logfile.write("# EV3 logfile w2.py Vbat = %5.3f\n" % (vbat))
-  print("#  Vbat = %5.3f\n" % (vbat))
+  print("#  Vbat = %5.3f" % (vbat))
 
   while not done:
     #rate = gy.speed()  # gyro reading
@@ -49,11 +49,14 @@ def printAngle():
     i += 1
     if (i%5 == 0) :
       logfile.write("%6.3f, %d, %d, %d, %d\n" % (t_elapsed,mot_angle,angle,a2,angle-a2) )
-      print("%d, %d" % ( mot_angle,angle-a2))
-    if (i%200 == 0):
+      #print("%d, %d" % ( mot_angle,angle-a2))
+    if (i%400 == 0):
       vbat = brick.battery.voltage()/1000.0 # convert millivolts to V
-      print("#  Vbat = %5.3f\n" % (vbat))
+      print("#  Vbat = %5.3f" % (vbat))
       logfile.write("# %6.3f , Vbat = %5.3f\n" % (t_elapsed,vbat))
+    if (DTFlag):
+      logfile.write("# Drive Time: %5.3f\n" % (driveTime))
+      DTFlag = False
     told = tnow
     sleep(0.01)
 
@@ -69,6 +72,7 @@ logfile = open ("log4.csv", "w") # open data log file
 logfile.write("seconds,motor_angle,gyro_1,gyro_2,diff\n")
 
 done = False         # flag to halt program
+DTFlag = False
 
 watch = StopWatch()
 amplitude = 90
@@ -103,7 +107,7 @@ runC = False
 t = Thread(target=printAngle)
 tstart = watch.time() / 1000
 
-t.start()  # start angle-integration routine
+t.start()  # start angle monitor routine
 brick.sound.beep(400, 10) # initialization-complete sound
 
 # ==========================================
@@ -126,18 +130,29 @@ while oc < 4:
   while (cycles < 2):
     cycles += 1
     print("Cycles: %d,%d" % (oc,cycles))
-    robot.drive_time(speed, steer, msec)
+    t1 = watch.time() / 1000
+    robot.drive_time(100, 45, 8000)
+    t2 = watch.time() / 1000
+    driveTime = t2-t1
+    print("CW drive time: %5.3f" % (driveTime))
+    DTFlag = True
     sleep(1)  # just in case not quite done
-    mB.stop()
-    mC.stop()
+    mB.stop(Stop.HOLD)
+    mC.stop(Stop.HOLD)
     waitBC()
+
   while (cycles < 4):
     cycles += 1
     print("Cycles: %d,%d" % (oc,cycles))
-    robot.drive_time(speed, -steer, msec)
+    t1 = watch.time() / 1000
+    robot.drive_time(100, -45, 8000)
+    t2 = watch.time() / 1000
+    driveTime = t2-t1
+    print("CCW drive time: %5.3f" % (driveTime))
+    DTFlag = True
     sleep(1) # just in case not quite done
-    mB.stop()
-    mC.stop()
+    mB.stop(Stop.HOLD)
+    mC.stop(Stop.HOLD)
     waitBC()
 
 # =============================================
